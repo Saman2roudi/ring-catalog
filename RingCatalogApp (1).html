@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ring Catalog Manager</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: #f5f5f5; min-height: 100vh; }
+        .header { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 2rem; background: rgba(0,0,0,0.3); }
+        .header-container { max-width: 1600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .header-title h1 { font-size: 2.5rem; font-weight: 300; letter-spacing: 2px; margin: 0 0 0.5rem 0; }
+        .header-title p { color: #999; font-size: 0.9rem; margin: 0; }
+        .view-toggle { display: flex; gap: 0.5rem; }
+        .view-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #f5f5f5; padding: 0.6rem 1.2rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .view-btn.active { background: rgba(201,169,97,0.3); border-color: rgba(201,169,97,0.5); color: #c9a961; }
+        .main { max-width: 1600px; margin: 0 auto; padding: 2rem; }
+        .search-bar { margin-bottom: 2rem; }
+        .search-input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #f5f5f5; padding: 0.75rem 1.5rem; border-radius: 4px; font-size: 1rem; width: 100%; max-width: 400px; outline: none; }
+        .search-input::placeholder { color: #999; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; }
+        .sku-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; position: relative; display: flex; flex-direction: column; }
+        .sku-card:hover { background: rgba(201,169,97,0.1); border-color: rgba(201,169,97,0.3); transform: translateY(-2px); }
+        .sku-delete-btn { position: absolute; top: 8px; right: 8px; background: rgba(255,67,67,0.9); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; transition: background 0.2s; }
+        .sku-delete-btn:hover { background: rgba(255,67,67,1); }
+        .sku-photo { width: 100%; height: 140px; background: linear-gradient(135deg, rgba(201,169,97,0.1) 0%, rgba(255,255,255,0.02) 100%); display: flex; align-items: center; justify-content: center; color: #999; font-size: 2rem; overflow: hidden; }
+        .sku-photo img { width: 100%; height: 100%; object-fit: cover; }
+        .sku-content { padding: 1rem; flex: 1; display: flex; flex-direction: column; }
+        .sku-code { color: #c9a961; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 600; word-break: break-all; }
+        .sku-footer { padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); }
+        .items-count { font-size: 0.75rem; }
+        .items-count strong { color: #c9a961; }
+        .list-view { background: rgba(255,255,255,0.02); border-radius: 8px; overflow: hidden; }
+        .list-table { width: 100%; border-collapse: collapse; }
+        .list-table thead { background: rgba(201,169,97,0.1); }
+        .list-table th { padding: 1rem; text-align: left; color: #c9a961; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .list-table td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #f5f5f5; }
+        .list-table tbody tr { cursor: pointer; transition: background 0.2s; }
+        .list-table tbody tr:hover { background: rgba(201,169,97,0.05); }
+        .btn-primary { background: linear-gradient(135deg, #c9a961 0%, #e0c07f 100%); color: #1a1a1a; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: transform 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #f5f5f5; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+        .btn-small-add { background: rgba(201,169,97,0.3); border: 1px solid rgba(201,169,97,0.5); color: #c9a961; cursor: pointer; font-size: 0.9rem; padding: 0.4rem 0.8rem; display: inline-flex; align-items: center; justify-content: center; margin-left: 0.5rem; border-radius: 4px; font-weight: 600; }
+        .btn-small-add:hover { background: rgba(201,169,97,0.5); }
+        .back-btn { background: none; border: none; color: #c9a961; cursor: pointer; font-size: 0.9rem; margin-bottom: 2rem; padding: 0; }
+        .detail-header { background: rgba(201,169,97,0.1); border: 1px solid rgba(201,169,97,0.2); padding: 2rem; border-radius: 8px; margin-bottom: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .detail-info { display: flex; flex-direction: column; gap: 1rem; }
+        .detail-code { color: #c9a961; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+        .detail-actions { display: flex; gap: 1rem; margin-top: 1rem; }
+        .detail-photo-section { display: flex; flex-direction: column; gap: 1rem; }
+        .detail-photo { width: 100%; height: 250px; background: linear-gradient(135deg, rgba(201,169,97,0.1) 0%, rgba(255,255,255,0.02) 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 3rem; overflow: hidden; }
+        .detail-photo img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-upload-btn { background: rgba(201,169,97,0.2); border: 2px dashed rgba(201,169,97,0.5); color: #c9a961; padding: 1rem; border-radius: 6px; cursor: pointer; text-align: center; font-weight: 600; transition: all 0.2s; }
+        .photo-upload-btn:hover { background: rgba(201,169,97,0.3); }
+        .items-section { margin-top: 3rem; }
+        .items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .items-header h2 { font-size: 1.5rem; }
+        .items-table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.02); border-radius: 8px; overflow: hidden; }
+        .items-table thead { background: rgba(201,169,97,0.1); }
+        .items-table th { padding: 1rem; text-align: left; color: #c9a961; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .items-table td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #f5f5f5; }
+        .items-table tbody tr:hover { background: rgba(201,169,97,0.05); }
+        .action-btn { background: none; border: none; cursor: pointer; color: #c9a961; margin-right: 1rem; font-size: 1rem; padding: 0; }
+        .action-btn.delete { color: #ff6b6b; }
+        .empty-state { text-align: center; padding: 3rem; background: rgba(255,255,255,0.05); border-radius: 8px; color: #999; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #2d2d2d; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 2rem; max-width: 600px; width: 90%; position: relative; margin: auto; }
+        .modal-title { font-size: 1.3rem; margin-bottom: 1.5rem; color: #f5f5f5; }
+        .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #c9a961; font-size: 1.5rem; cursor: pointer; }
+        .form-group { display: grid; gap: 0.5rem; margin-bottom: 1rem; }
+        .form-label { font-weight: 600; color: #c9a961; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
+        input[type="text"], input[type="number"], input[type="file"], textarea, select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #f5f5f5; padding: 0.75rem; border-radius: 4px; font-family: inherit; outline: none; width: 100%; }
+        select option { background: #2d2d2d; color: #f5f5f5; }
+        textarea { resize: vertical; min-height: 80px; }
+        .button-group { display: flex; gap: 1rem; margin-top: 2rem; }
+        .button-group button { flex: 1; }
+        .wizard-step { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
+        .step-title { font-size: 1.1rem; margin-bottom: 1rem; color: #c9a961; }
+        .option-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
+        .option-button { background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); color: #f5f5f5; padding: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .option-button:hover { background: rgba(201,169,97,0.1); border-color: rgba(201,169,97,0.3); }
+        .option-button.selected { background: rgba(201,169,97,0.2); border-color: #c9a961; box-shadow: 0 0 10px rgba(201,169,97,0.2); }
+        .option-name { font-weight: 500; margin-bottom: 0.25rem; color: #f5f5f5; }
+        .option-code { font-size: 0.8rem; color: #999; }
+        .add-new-option { background: rgba(201,169,97,0.1); border: 2px dashed rgba(201,169,97,0.5); color: #c9a961; padding: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; grid-column: 1 / -1; }
+        .add-new-option:hover { background: rgba(201,169,97,0.2); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <div class="header-title">
+                <h1>RING CATALOG MANAGER</h1>
+                <p id="headerStats">49 SKUs • 0 Items</p>
+            </div>
+            <div class="view-toggle">
+                <button class="view-btn active" onclick="app.setView('gallery')">Gallery</button>
+                <button class="view-btn" onclick="app.setView('list')">List</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main" id="mainContent"></main>
+
+    <!-- Add Item Modal -->
+    <div class="modal-overlay" id="addItemModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="app.closeAddItemModal()">✕</button>
+            <h2 class="modal-title">Add New Item</h2>
+            <form id="addItemForm" onsubmit="app.handleAddItem(event)">
+                <div class="form-group">
+                    <label class="form-label">Size * <button type="button" class="btn-small-add" onclick="app.addNewSize()">+ Add</button></label>
+                    <select id="itemSize" required></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Metal Type * <button type="button" class="btn-small-add" onclick="app.addNewMetal()">+ Add</button></label>
+                    <select id="itemMetal" required></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stone Color <button type="button" class="btn-small-add" onclick="app.addNewColor()">+ Add</button></label>
+                    <select id="itemColor"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stone Clarity <button type="button" class="btn-small-add" onclick="app.addNewClarity()">+ Add</button></label>
+                    <select id="itemClarity"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price</label>
+                    <input type="number" id="itemPrice" step="0.01" placeholder="Optional"/>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Barcode</label>
+                    <input type="text" id="itemBarcode" placeholder="Optional"/>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea id="itemNotes" placeholder="Optional notes"></textarea>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="btn-secondary" onclick="app.closeAddItemModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit SKU Modal -->
+    <div class="modal-overlay" id="editSKUModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="app.closeEditSKUModal()">✕</button>
+            <h2 class="modal-title">Edit SKU</h2>
+            <form id="editSKUForm" onsubmit="app.handleEditSKU(event)">
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea id="editNotes" placeholder="Notes about this design"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Photo</label>
+                    <input type="file" id="editPhoto" accept="image/*"/>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="btn-secondary" onclick="app.closeEditSKUModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create New SKU Modal (Wizard) -->
+    <div class="modal-overlay" id="createSKUModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="app.closeCreateModal()">✕</button>
+            <h2 class="modal-title">Create New SKU</h2>
+            <div id="wizardContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const ALL_CODES = ['EROV-BTPV-ST1','ERRA-BTPV-ST1','EREM-BTPV-ST1','ERPE-BTPV-ST1','ERMQ-BTPV-ST1','EROV-THHND-ST2','ERRA-THHND-ST2','EREM-THHND-ST2','ERPE-THHND-ST2','ERMQ-THHND-ST2','EROV-THPV-ST3','ERRA-THPV-ST3','EREM-THPV-ST3','ERPE-THPV-ST3','ERMQ-THPV-ST3','EROV-CHHPV-ST4','ERRA-CHHPV-ST4','EREM-CHHPV-ST4','ERPE-CHHPV-ST4','ERMQ-CHHPV-ST4','EROV-4PSP-ST5','ERRA-4PSP-ST5','EREM-4PSP-ST5','ERPE-4PSP-ST5','ERMQ-4PSP-ST5','EROV-BZND-ST6','ERRA-BZND-ST6','EREM-BZND-ST6','ERPE-BZND-ST6','ERMQ-BZND-ST6','EROV-C4PHHND-ST7','ERRA-THHND-ST7','EREM-THHND-ST7','ERPE-THHND-ST7','ERMQ-THHND-ST7','EROV-THHSIP-FL8','ERRA-THHSIP-FL8','EREM-THHSIP-FL8','ERPE-THHSIP-FL8','ERMQ-THHSIP-FL8','EROV-TSND-HKE9','ERMQ-TSND-HKE9','ERPE-TSND-HKE9','ERMQ-HBZND-TP10','ERMQ-HBZND-TP11','ERMQ-BPPV-SS12','ERMQ-BPND-TW13','ERPE-BPND-TW10','ERPE-BPBZ-TW11'];
+
+        // Parse codes to extract unique values
+        const parseCode = (code) => {
+            const parts = code.split('-');
+            return { itemType: parts[0].substring(0, 2), shape: parts[0].substring(2), setting: parts[1], sideDiamond: parts[2], band: parts[3], number: parts[4] };
+        };
+
+        const getAllShapes = () => [...new Set(ALL_CODES.map(c => parseCode(c).shape))];
+        const getAllSettings = () => [...new Set(ALL_CODES.flatMap(c => parseCode(c).setting))];
+        const getAllSideDiamonds = () => [...new Set(ALL_CODES.flatMap(c => parseCode(c).sideDiamond))];
+        const getAllBands = () => [...new Set(ALL_CODES.flatMap(c => parseCode(c).band))];
+
+        const DATA = {
+            metals: [{name:'Platinum',code:'PT'},{name:'White Gold',code:'WG'},{name:'Yellow Gold',code:'YG'},{name:'Rose Gold',code:'RG'}],
+            colors: [{name:'D',code:'D'},{name:'E',code:'E'},{name:'F',code:'F'},{name:'G',code:'G'},{name:'H',code:'H'},{name:'I',code:'I'},{name:'J',code:'J'}],
+            clarity: [{name:'IF',code:'IF'},{name:'VVS1',code:'VVS1'},{name:'VVS2',code:'VVS2'},{name:'VS1',code:'VS1'},{name:'VS2',code:'VS2'},{name:'SI1',code:'SI1'},{name:'SI2',code:'SI2'}],
+            sizes: [{name:'4',code:'4'},{name:'4.5',code:'4.5'},{name:'5',code:'5'},{name:'5.5',code:'5.5'},{name:'6',code:'6'},{name:'6.5',code:'6.5'},{name:'7',code:'7'},{name:'7.5',code:'7.5'},{name:'8',code:'8'},{name:'8.5',code:'8.5'},{name:'9',code:'9'},{name:'9.5',code:'9.5'},{name:'10',code:'10'}]
+        };
+
+        const app = {
+            state: { view: 'gallery', skus: [], selectedSKU: null, editingSKU: null, currentItemModalSKU: null, searchTerm: '', wizard: {shape: null, setting: null, sideDiamond: null, band: null, photo: null, notes: ''} },
+
+            init() {
+                let saved = localStorage.getItem('skus');
+                if (!saved || JSON.parse(saved).length === 0) {
+                    this.state.skus = ALL_CODES.map(code => ({code, photo: null, notes: '', items: []}));
+                    this.saveState();
+                } else {
+                    this.state.skus = JSON.parse(saved);
+                }
+                this.populateSelects();
+                this.render();
+            },
+
+            populateSelects() {
+                ['itemSize','itemMetal','itemColor','itemClarity'].forEach(id => {
+                    if(document.getElementById(id)) document.getElementById(id).innerHTML = '<option value="">Select...</option>';
+                });
+                DATA.sizes.forEach(s => document.getElementById('itemSize').innerHTML += `<option value="${s.code}">${s.name}</option>`);
+                DATA.metals.forEach(m => document.getElementById('itemMetal').innerHTML += `<option value="${m.code}">${m.name}</option>`);
+                DATA.colors.forEach(c => document.getElementById('itemColor').innerHTML += `<option value="${c.code}">${c.name}</option>`);
+                DATA.clarity.forEach(c => document.getElementById('itemClarity').innerHTML += `<option value="${c.code}">${c.name}</option>`);
+            },
+
+            saveState() { localStorage.setItem('skus', JSON.stringify(this.state.skus)); },
+
+            setView(view) {
+                this.state.view = view;
+                document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+                this.render();
+            },
+
+            render() {
+                const mainContent = document.getElementById('mainContent');
+                if (this.state.view === 'gallery') mainContent.innerHTML = this.renderGallery();
+                else if (this.state.view === 'list') mainContent.innerHTML = this.renderList();
+                else if (this.state.view === 'detail') mainContent.innerHTML = this.renderDetail();
+                this.updateHeader();
+            },
+
+            updateHeader() {
+                const totalItems = this.state.skus.reduce((sum, sku) => sum + (sku.items?.length || 0), 0);
+                document.getElementById('headerStats').textContent = `${this.state.skus.length} SKUs • ${totalItems} Items`;
+            },
+
+            renderGallery() {
+                const filtered = this.state.searchTerm ? this.state.skus.filter(s => s.code.toLowerCase().includes(this.state.searchTerm.toLowerCase())) : this.state.skus;
+                return `<div style="margin-bottom: 2rem; display: flex; gap: 1rem;"><button class="btn-primary" onclick="app.openCreateModal()">➕ Create New SKU</button><input type="text" class="search-input" placeholder="Search SKU codes... (e.g., OV for Oval, BT for Bow Tie)" onkeyup="app.setSearchTerm(this.value)"/></div><div class="gallery">${filtered.map(sku => this.renderSKUCard(sku)).join('')}</div>`;
+            },
+
+            renderSKUCard(sku) {
+                const itemCount = sku.items?.length || 0;
+                return `<div class="sku-card" onclick="app.viewSKUDetail('${sku.code}')"><button class="sku-delete-btn" onclick="event.stopPropagation(); app.deleteSKU('${sku.code}');">✕</button><div class="sku-photo">${sku.photo ? `<img src="${sku.photo}" alt="${sku.code}">` : '◇'}</div><div class="sku-content"><div class="sku-code">${sku.code}</div><div class="sku-footer"><div class="items-count"><strong>${itemCount}</strong> Item${itemCount !== 1 ? 's' : ''}</div></div></div></div>`;
+            },
+
+            renderList() {
+                const filtered = this.state.searchTerm ? this.state.skus.filter(s => s.code.toLowerCase().includes(this.state.searchTerm.toLowerCase())) : this.state.skus;
+                return `<div style="margin-bottom: 2rem;"><input type="text" class="search-input" placeholder="Search SKU codes..." onkeyup="app.setSearchTerm(this.value)"/></div><div class="list-view"><table class="list-table"><thead><tr><th>SKU Code</th><th>Items</th><th>Actions</th></tr></thead><tbody>${filtered.map(sku => `<tr onclick="app.viewSKUDetail('${sku.code}')"><td style="color: #c9a961; font-weight: 600;">${sku.code}</td><td style="color: #c9a961;">${sku.items?.length || 0}</td><td onclick="event.stopPropagation();"><button class="action-btn" onclick="app.openEditModal('${sku.code}')">✎</button><button class="action-btn delete" onclick="app.deleteSKU('${sku.code}')">✕</button></td></tr>`).join('')}</tbody></table></div>`;
+            },
+
+            setSearchTerm(term) { this.state.searchTerm = term; this.render(); },
+
+            viewSKUDetail(code) { this.state.selectedSKU = this.state.skus.find(s => s.code === code); this.state.view = 'detail'; this.render(); },
+
+            renderDetail() {
+                const sku = this.state.selectedSKU;
+                if (!sku) return '<button class="back-btn" onclick="app.backToGallery()">← Back</button><p>SKU not found</p>';
+                const itemCount = sku.items?.length || 0;
+                return `<button class="back-btn" onclick="app.backToGallery()">← Back to Gallery</button><div class="detail-header"><div class="detail-info"><div><div class="detail-code">${sku.code}</div><h2 style="font-size: 1.8rem; margin: 0.5rem 0; color: #c9a961;">${sku.code}</h2></div>${sku.notes ? `<p style="color: #aaa; margin-top: 1rem;"><strong>Notes:</strong> ${sku.notes}</p>` : ''}<div class="detail-actions"><button class="btn-secondary" onclick="app.openEditModal('${sku.code}')">✎ Edit Details</button></div></div><div class="detail-photo-section"><div class="detail-photo">${sku.photo ? `<img src="${sku.photo}" alt="${sku.code}">` : '📷'}</div><button class="photo-upload-btn" onclick="document.getElementById('editPhotoFile').click();">📸 ${sku.photo ? 'Change Photo' : 'Add Photo'}</button><input type="file" id="editPhotoFile" accept="image/*" style="display:none;" onchange="app.handleQuickPhotoUpload(event)"/></div></div><div class="items-section"><div class="items-header"><h2>Items in this SKU</h2><button class="btn-primary" onclick="app.openAddItemModal('${sku.code}')">➕ Add Item</button></div>${itemCount === 0 ? `<div class="empty-state"><p>No items yet. Add your first item to this SKU!</p></div>` : `<table class="items-table"><thead><tr><th>Size</th><th>Metal</th><th>Color</th><th>Clarity</th><th>Price</th><th>Barcode</th><th>Notes</th><th>Actions</th></tr></thead><tbody>${sku.items.map((item, idx) => `<tr><td>${item.size}</td><td>${item.metal}</td><td>${item.color || '-'}</td><td>${item.clarity || '-'}</td><td>${item.price ? '$' + parseFloat(item.price).toFixed(2) : '-'}</td><td>${item.barcode || '-'}</td><td>${item.notes || '-'}</td><td><button class="action-btn delete" onclick="app.deleteItem('${sku.code}', ${idx})">✕</button></td></tr>`).join('')}</tbody></table>`}</div>`;
+            },
+
+            backToGallery() { this.state.view = 'gallery'; this.state.selectedSKU = null; this.render(); },
+
+            openAddItemModal(code) { this.state.currentItemModalSKU = code; document.getElementById('addItemForm').reset(); document.getElementById('addItemModal').classList.add('active'); },
+
+            closeAddItemModal() { document.getElementById('addItemModal').classList.remove('active'); this.state.currentItemModalSKU = null; },
+
+            handleAddItem(event) {
+                event.preventDefault();
+                const item = {size: document.getElementById('itemSize').value, metal: document.getElementById('itemMetal').value, color: document.getElementById('itemColor').value, clarity: document.getElementById('itemClarity').value, price: document.getElementById('itemPrice').value, barcode: document.getElementById('itemBarcode').value, notes: document.getElementById('itemNotes').value};
+                if (!item.size || !item.metal) { alert('Please fill in Size and Metal Type'); return; }
+                const sku = this.state.skus.find(s => s.code === this.state.currentItemModalSKU);
+                if (!sku.items) sku.items = [];
+                sku.items.push(item);
+                this.saveState();
+                this.closeAddItemModal();
+                this.state.selectedSKU = sku;
+                this.render();
+            },
+
+            openEditModal(code) { this.state.editingSKU = code; const sku = this.state.skus.find(s => s.code === code); document.getElementById('editNotes').value = sku.notes; document.getElementById('editSKUModal').classList.add('active'); },
+
+            closeEditSKUModal() { document.getElementById('editSKUModal').classList.remove('active'); this.state.editingSKU = null; },
+
+            handleEditSKU(event) {
+                event.preventDefault();
+                const sku = this.state.skus.find(s => s.code === this.state.editingSKU);
+                sku.notes = document.getElementById('editNotes').value;
+                const photoFile = document.getElementById('editPhoto').files[0];
+                if (photoFile) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => { sku.photo = e.target.result; this.saveState(); this.closeEditSKUModal(); if (this.state.selectedSKU && this.state.selectedSKU.code === this.state.editingSKU) this.state.selectedSKU = sku; this.render(); };
+                    reader.readAsDataURL(photoFile);
+                } else {
+                    this.saveState();
+                    this.closeEditSKUModal();
+                    if (this.state.selectedSKU && this.state.selectedSKU.code === this.state.editingSKU) this.state.selectedSKU = sku;
+                    this.render();
+                }
+            },
+
+            handleQuickPhotoUpload(event) {
+                const file = event.target.files[0];
+                if (file && this.state.selectedSKU) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => { this.state.selectedSKU.photo = e.target.result; const sku = this.state.skus.find(s => s.code === this.state.selectedSKU.code); if (sku) sku.photo = e.target.result; this.saveState(); this.render(); };
+                    reader.readAsDataURL(file);
+                }
+            },
+
+            openCreateModal() { this.state.wizard = {shape: null, setting: null, sideDiamond: null, band: null, photo: null, notes: ''}; document.getElementById('createSKUModal').classList.add('active'); this.renderWizard(); },
+
+            closeCreateModal() { document.getElementById('createSKUModal').classList.remove('active'); },
+
+            renderWizard() {
+                const w = this.state.wizard;
+                let html = `<form onsubmit="app.handleCreateSKU(event)">`;
+                
+                html += `<div class="wizard-step"><div class="step-title">1. Stone Shape</div><div class="option-list">`;
+                getAllShapes().forEach(s => {
+                    html += `<button type="button" class="option-button ${w.shape === s ? 'selected' : ''}" onclick="app.selectWizardStep('shape', '${s}')">${s}</button>`;
+                });
+                html += `<button type="button" class="add-new-option" onclick="app.addNewShapeOption()">➕ Add New</button></div></div>`;
+
+                if (w.shape) {
+                    html += `<div class="wizard-step"><div class="step-title">2. Stone Setting</div><div class="option-list">`;
+                    getAllSettings().forEach(s => {
+                        html += `<button type="button" class="option-button ${w.setting === s ? 'selected' : ''}" onclick="app.selectWizardStep('setting', '${s}')">${s}</button>`;
+                    });
+                    html += `<button type="button" class="add-new-option" onclick="app.addNewSettingOption()">➕ Add New</button></div></div>`;
+                }
+
+                if (w.setting) {
+                    html += `<div class="wizard-step"><div class="step-title">3. Side Diamonds</div><div class="option-list">`;
+                    getAllSideDiamonds().forEach(s => {
+                        html += `<button type="button" class="option-button ${w.sideDiamond === s ? 'selected' : ''}" onclick="app.selectWizardStep('sideDiamond', '${s}')">${s}</button>`;
+                    });
+                    html += `<button type="button" class="add-new-option" onclick="app.addNewSideDiamondOption()">➕ Add New</button></div></div>`;
+                }
+
+                if (w.sideDiamond) {
+                    html += `<div class="wizard-step"><div class="step-title">4. Band</div><div class="option-list">`;
+                    getAllBands().forEach(s => {
+                        html += `<button type="button" class="option-button ${w.band === s ? 'selected' : ''}" onclick="app.selectWizardStep('band', '${s}')">${s}</button>`;
+                    });
+                    html += `<button type="button" class="add-new-option" onclick="app.addNewBandOption()">➕ Add New</button></div></div>`;
+                }
+
+                if (w.band) {
+                    html += `<div class="wizard-step"><div class="step-title">5. Photo & Notes</div>
+                    <div class="form-group"><label class="form-label">Notes</label><textarea id="wizNotes" placeholder="Optional notes"></textarea></div>
+                    <div class="form-group"><label class="form-label">Photo</label><input type="file" id="wizPhoto" accept="image/*"/></div></div>
+                    <div class="button-group"><button type="button" class="btn-secondary" onclick="app.closeCreateModal()">Cancel</button><button type="submit" class="btn-primary">Create SKU</button></div>`;
+                }
+
+                html += `</form>`;
+                document.getElementById('wizardContent').innerHTML = html;
+            },
+
+            selectWizardStep(key, value) { this.state.wizard[key] = value; this.renderWizard(); },
+
+            addNewShapeOption() { const name = prompt('Enter new shape code (e.g., RD):'); if (name) this.renderWizard(); },
+            addNewSettingOption() { const name = prompt('Enter new setting code (e.g., SL):'); if (name) this.renderWizard(); },
+            addNewSideDiamondOption() { const name = prompt('Enter new side diamond code (e.g., PV):'); if (name) this.renderWizard(); },
+            addNewBandOption() { const name = prompt('Enter new band code (e.g., ST):'); if (name) this.renderWizard(); },
+
+            handleCreateSKU(event) {
+                event.preventDefault();
+                const w = this.state.wizard;
+                if (!w.shape || !w.setting || !w.sideDiamond || !w.band) { alert('Please complete all steps'); return; }
+                
+                const code = `ER${w.shape}-${w.setting}${w.sideDiamond}-${w.band}1`;
+                if (this.state.skus.find(s => s.code === code)) { alert('This SKU already exists'); return; }
+
+                const newSKU = {code, photo: null, notes: document.getElementById('wizNotes')?.value || '', items: []};
+                const photoFile = document.getElementById('wizPhoto')?.files[0];
+                
+                if (photoFile) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => { newSKU.photo = e.target.result; this.state.skus.push(newSKU); this.saveState(); this.closeCreateModal(); this.render(); };
+                    reader.readAsDataURL(photoFile);
+                } else {
+                    this.state.skus.push(newSKU);
+                    this.saveState();
+                    this.closeCreateModal();
+                    this.render();
+                }
+            },
+
+            addNewSize() { const size = prompt('Enter new size:'); if (size) { DATA.sizes.push({name: size, code: size}); document.getElementById('itemSize').innerHTML += `<option value="${size}">${size}</option>`; document.getElementById('itemSize').value = size; } },
+            addNewMetal() { const name = prompt('Enter metal name:'); if (name) { const code = name.substring(0,2).toUpperCase(); DATA.metals.push({name, code}); document.getElementById('itemMetal').innerHTML += `<option value="${code}">${name}</option>`; document.getElementById('itemMetal').value = code; } },
+            addNewColor() { const color = prompt('Enter color code:'); if (color) { DATA.colors.push({name: color, code: color}); document.getElementById('itemColor').innerHTML += `<option value="${color}">${color}</option>`; document.getElementById('itemColor').value = color; } },
+            addNewClarity() { const clarity = prompt('Enter clarity grade:'); if (clarity) { DATA.clarity.push({name: clarity, code: clarity}); document.getElementById('itemClarity').innerHTML += `<option value="${clarity}">${clarity}</option>`; document.getElementById('itemClarity').value = clarity; } },
+
+            deleteItem(code, idx) { if (confirm('Delete this item?')) { const sku = this.state.skus.find(s => s.code === code); sku.items.splice(idx, 1); this.saveState(); this.render(); } },
+
+            deleteSKU(code) { if (confirm('Delete entire SKU?')) { this.state.skus = this.state.skus.filter(s => s.code !== code); this.saveState(); this.render(); } }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
